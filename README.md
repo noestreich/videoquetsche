@@ -2,6 +2,8 @@
 
 Eine schlanke macOS-App zum Komprimieren von Videos per Drag & Drop — powered by ffmpeg.
 
+![Videoquetsche Screenshot](screenshot.png)
+
 ## Features
 
 - **Drag & Drop** — Videos einfach ins Fenster ziehen (MP4, MOV, AVI, MKV, WebM, M4V, FLV, WMV, MPG, 3GP)
