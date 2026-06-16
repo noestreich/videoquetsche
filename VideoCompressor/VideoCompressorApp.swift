@@ -20,6 +20,7 @@ struct VideoCompressorApp: App {
                 .onReceive(appDelegate.$filesToOpen) { urls in
                     guard !urls.isEmpty else { return }
                     processor.addFiles(urls)
+                    appDelegate.filesToOpen = []
                 }
         }
         .windowStyle(.hiddenTitleBar)
