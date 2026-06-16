@@ -2,7 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ContentView: View {
-    @StateObject private var processor = VideoProcessor()
+    @EnvironmentObject var processor: VideoProcessor
     @State private var settings = CompressionSettings()
     @State private var isTargeted = false
 
@@ -68,7 +68,7 @@ struct ContentView: View {
 
             Divider()
 
-            // Action button
+            // Action bar
             HStack {
                 if processor.isProcessing {
                     Button("Abbrechen") {
@@ -83,6 +83,9 @@ struct ContentView: View {
                 Spacer()
 
                 let waiting = processor.jobs.filter { $0.status == .waiting }.count
+                let mergeEnabled = settings.mergeFiles
+                let buttonDisabled = mergeEnabled ? (waiting < 2 || processor.isProcessing) : (waiting == 0 || processor.isProcessing)
+
                 Button(action: {
                     processor.startProcessing(settings: settings)
                 }) {
@@ -92,17 +95,24 @@ struct ContentView: View {
                                 .scaleEffect(0.7)
                                 .frame(width: 14, height: 14)
                         }
-                        Text(processor.isProcessing ? "Verarbeite..." : "Komprimieren (\(waiting))")
+                        Text(buttonLabel(waiting: waiting, mergeEnabled: mergeEnabled))
                     }
                     .frame(minWidth: 160)
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(waiting == 0 || processor.isProcessing)
+                .disabled(buttonDisabled)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
         }
         .frame(width: 480)
+    }
+
+    private func buttonLabel(waiting: Int, mergeEnabled: Bool) -> String {
+        if processor.isProcessing {
+            return mergeEnabled ? "Verbinde..." : "Verarbeite..."
+        }
+        return mergeEnabled ? "Verbinden (\(waiting))" : "Komprimieren (\(waiting))"
     }
 
     private func handleDrop(providers: [NSItemProvider]) -> Bool {
@@ -179,7 +189,11 @@ struct JobRowView: View {
                         .foregroundColor(.red)
                         .lineLimit(2)
                 } else if job.status == .done, let outSize = job.outputSize {
-                    SizeSummaryView(originalSize: job.originalSize, outputSize: outSize)
+                    if job.isMergeSource {
+                        MergeSummaryView(outputSize: outSize)
+                    } else {
+                        SizeSummaryView(originalSize: job.originalSize, outputSize: outSize)
+                    }
                 } else if job.originalSize > 0 {
                     Text(formatBytes(job.originalSize))
                         .font(.caption)
@@ -210,12 +224,12 @@ struct JobRowView: View {
             Image(systemName: "clock")
                 .foregroundColor(.secondary)
         case .running:
-            Image(systemName: "gear")
+            Image(systemName: job.isMergeSource ? "link" : "gear")
                 .foregroundColor(.accentColor)
-                .rotationEffect(.degrees(job.progress * 360 * 4))
-                .animation(.linear(duration: 2).repeatForever(autoreverses: false), value: job.progress)
+                .rotationEffect(.degrees(job.isMergeSource ? 0 : job.progress * 360 * 4))
+                .animation(job.isMergeSource ? .none : .linear(duration: 2).repeatForever(autoreverses: false), value: job.progress)
         case .done:
-            Image(systemName: "checkmark.circle.fill")
+            Image(systemName: job.isMergeSource ? "checkmark.circle.fill" : "checkmark.circle.fill")
                 .foregroundColor(.green)
         case .failed:
             Image(systemName: "xmark.circle.fill")
@@ -257,6 +271,20 @@ struct SizeSummaryView: View {
             Text(formatBytes(outputSize))
             Text("(\(savings >= 0 ? "-" : "+")\(String(format: "%.0f", abs(savings)))%)")
                 .foregroundColor(savingsColor)
+        }
+        .font(.caption)
+        .foregroundColor(.secondary)
+    }
+}
+
+struct MergeSummaryView: View {
+    let outputSize: Int64
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "link")
+                .font(.caption2)
+            Text("In Ausgabedatei verbunden · \(formatBytes(outputSize))")
         }
         .font(.caption)
         .foregroundColor(.secondary)
@@ -305,9 +333,8 @@ struct SettingsView: View {
 
             Divider()
 
-            // Resolution + Audio + Padding in grid
+            // Resolution + Padding
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                // Resolution
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Auflösung")
                         .font(.caption)
@@ -321,7 +348,6 @@ struct SettingsView: View {
                     .labelsHidden()
                 }
 
-                // Padding
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Quadratisches Format")
                         .font(.caption)
@@ -342,6 +368,17 @@ struct SettingsView: View {
                     Image(systemName: "speaker.slash")
                         .foregroundColor(.secondary)
                     Text("Tonspur entfernen")
+                        .font(.body)
+                }
+            }
+            .toggleStyle(.switch)
+
+            // Merge toggle
+            Toggle(isOn: $settings.mergeFiles) {
+                HStack(spacing: 6) {
+                    Image(systemName: "link")
+                        .foregroundColor(.secondary)
+                    Text("Dateien verbinden")
                         .font(.body)
                 }
             }
