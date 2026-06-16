@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Xcode
+build/
+*.xcworkspace
+xcuserdata/
+*.moved-to-trash/
+DerivedData/
+*.hmap
+*.ipa
+*.xcarchive
+
+# Compiled app & distribution
+Videoquetsche.app
+Videoquetsche.zip
