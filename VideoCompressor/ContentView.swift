@@ -305,7 +305,7 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        VStack(spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) {
             // Quality
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
@@ -333,56 +333,48 @@ struct SettingsView: View {
 
             Divider()
 
-            // Resolution + Padding
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Auflösung")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Picker("", selection: $settings.resolution) {
-                        ForEach(Resolution.allCases) { res in
-                            Text(res.rawValue).tag(res)
-                        }
+            // Resolution
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Auflösung")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Picker("", selection: $settings.resolution) {
+                    ForEach(Resolution.allCases) { res in
+                        Text(res.rawValue).tag(res)
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+            }
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Quadratisches Format")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                    Picker("", selection: $settings.paddingColor) {
-                        ForEach(PaddingColor.allCases) { color in
-                            Text(color.rawValue).tag(color)
-                        }
+            // Padding
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Quadratisches Format")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+                Picker("", selection: $settings.paddingColor) {
+                    ForEach(PaddingColor.allCases) { color in
+                        Text(color.rawValue).tag(color)
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
             }
 
-            // Audio toggle
-            Toggle(isOn: $settings.removeAudio) {
-                HStack(spacing: 6) {
-                    Image(systemName: "speaker.slash")
-                        .foregroundColor(.secondary)
-                    Text("Tonspur entfernen")
-                        .font(.body)
-                }
-            }
-            .toggleStyle(.switch)
+            Divider()
 
-            // Merge toggle
-            Toggle(isOn: $settings.mergeFiles) {
-                HStack(spacing: 6) {
-                    Image(systemName: "link")
-                        .foregroundColor(.secondary)
-                    Text("Dateien verbinden")
-                        .font(.body)
+            // Toggles
+            VStack(alignment: .leading, spacing: 10) {
+                Toggle(isOn: $settings.removeAudio) {
+                    Label("Tonspur entfernen", systemImage: "speaker.slash")
                 }
+                .toggleStyle(.switch)
+
+                Toggle(isOn: $settings.mergeFiles) {
+                    Label("Dateien verbinden", systemImage: "link")
+                }
+                .toggleStyle(.switch)
             }
-            .toggleStyle(.switch)
 
             Divider()
 
@@ -403,27 +395,42 @@ struct FFmpegStatusView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        if ffmpegFound {
             HStack(spacing: 5) {
-                Image(systemName: ffmpegFound ? "checkmark.circle.fill" : "xmark.circle.fill")
+                Image(systemName: "checkmark.circle.fill")
                     .font(.caption)
-                    .foregroundColor(ffmpegFound ? .green : .red)
-                Text(ffmpegFound ? "ffmpeg vorhanden" : "ffmpeg nicht gefunden")
+                    .foregroundColor(.green)
+                Text("ffmpeg vorhanden")
                     .font(.caption.weight(.medium))
-                    .foregroundColor(ffmpegFound ? .green : .red)
+                    .foregroundColor(.green)
             }
-            ForEach(candidates, id: \.self) { path in
-                let found = FileManager.default.fileExists(atPath: path)
-                HStack(spacing: 6) {
-                    Image(systemName: found ? "checkmark.circle.fill" : "circle")
-                        .font(.caption2)
-                        .foregroundColor(found ? .green : Color.secondary.opacity(0.35))
-                    Text(path)
-                        .font(.system(.caption2, design: .monospaced))
-                        .foregroundColor(found ? .primary : Color.secondary.opacity(0.45))
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            VStack(alignment: .leading, spacing: 5) {
+                HStack(spacing: 5) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.caption)
+                        .foregroundColor(.red)
+                    Text("ffmpeg nicht gefunden")
+                        .font(.caption.weight(.medium))
+                        .foregroundColor(.red)
                 }
+                ForEach(candidates, id: \.self) { path in
+                    HStack(spacing: 6) {
+                        Image(systemName: "circle")
+                            .font(.caption2)
+                            .foregroundColor(Color.secondary.opacity(0.35))
+                        Text(path)
+                            .font(.system(.caption2, design: .monospaced))
+                            .foregroundColor(Color.secondary.opacity(0.45))
+                    }
+                }
+                Text("Installieren: brew install ffmpeg")
+                    .font(.system(.caption2, design: .monospaced))
+                    .foregroundColor(.secondary)
+                    .padding(.top, 2)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
