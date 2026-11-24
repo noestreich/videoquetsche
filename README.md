@@ -15,7 +15,7 @@ Eine schlanke macOS-App zum Komprimieren von Videos per Drag & Drop — powered 
 - **Tonspur entfernen** — optional per Toggle
 - **Fortschrittsanzeige** — Echtzeit-Progress pro Datei
 - **Batch-Verarbeitung** — mehrere Videos nacheinander
-- Output-Dateien landen neben dem Original als `*-small.mp4`
+- Output-Dateien landen neben dem Original als `*-small.mp4`; die Lupe neben einem fertigen Video zeigt die Datei direkt im Finder
 
 ## Voraussetzungen
 
