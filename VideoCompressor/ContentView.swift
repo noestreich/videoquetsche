@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 import UniformTypeIdentifiers
 
 struct ContentView: View {
@@ -223,6 +224,19 @@ struct JobRowView: View {
 
             Spacer()
 
+            if job.status == .done, let outputURL = job.outputURL {
+                Button {
+                    showInFinder(outputURL)
+                } label: {
+                    Image(systemName: "magnifyingglass")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .buttonStyle(.plain)
+                .help("Im Finder zeigen")
+                .accessibilityLabel("Im Finder zeigen")
+            }
+
             if job.status != .running {
                 Button(action: onRemove) {
                     Image(systemName: "xmark")
@@ -265,6 +279,15 @@ struct JobRowView: View {
 
     var rowBackground: some View {
         Color.secondary.opacity(job.status == .running || job.status == .downloading ? 0.08 : 0.0)
+    }
+
+    /// Reveals the file in Finder; falls back to its folder if it was moved or deleted.
+    private func showInFinder(_ url: URL) {
+        if FileManager.default.fileExists(atPath: url.path) {
+            NSWorkspace.shared.activateFileViewerSelecting([url])
+        } else {
+            NSWorkspace.shared.open(url.deletingLastPathComponent())
+        }
     }
 }
 
