@@ -41,6 +41,7 @@ struct VideoJob: Identifiable {
     var errorMessage: String?
     var originalSize: Int64 = 0
     var outputSize: Int64? = nil
+    var outputURL: URL? = nil
     var isMergeSource: Bool = false
 
     enum JobStatus {
@@ -202,6 +203,7 @@ class VideoProcessor: ObservableObject {
                 try await runFFmpeg(input: url, output: outputURL, settings: settings, jobID: id)
                 guard let i = index(of: id) else { continue }
                 jobs[i].outputSize = fileSize(outputURL)
+                jobs[i].outputURL = outputURL
                 jobs[i].status = .done
                 jobs[i].progress = 1.0
             } catch {
@@ -270,6 +272,7 @@ class VideoProcessor: ObservableObject {
             let outSize = fileSize(outputURL)
             update {
                 $0.outputSize = outSize
+                $0.outputURL = outputURL
                 $0.status = .done
                 $0.progress = 1.0
             }
