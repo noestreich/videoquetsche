@@ -7,7 +7,7 @@
 #                             (needs `gh`, uses RELEASE_NOTES.md as description)
 #
 # One-time setup for notarization (stores an app-specific password in the keychain):
-#   xcrun notarytool store-credentials "videoquetsche-notary" \
+#   xcrun notarytool store-credentials "Remacable" \
 #     --apple-id "<apple-id>" --team-id "9H7F5NMT97" --password "<app-specific-password>"
 set -euo pipefail
 
@@ -17,7 +17,7 @@ BUILD="$SCRIPT_DIR/build"
 OUT="$SCRIPT_DIR/Videoquetsche.app"
 ZIP="$SCRIPT_DIR/Videoquetsche.zip"
 SIGN_ID="Developer ID Application: aketo GmbH (9H7F5NMT97)"
-NOTARY_PROFILE="${NOTARY_PROFILE:-videoquetsche-notary}"
+NOTARY_PROFILE="${NOTARY_PROFILE:-Remacable}"
 
 MODE="${1:-}"
 case "$MODE" in
