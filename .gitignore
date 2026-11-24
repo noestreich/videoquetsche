@@ -16,3 +16,4 @@ DerivedData/
 # Compiled app & distribution
 Videoquetsche.app
 Videoquetsche.zip
+*.whl

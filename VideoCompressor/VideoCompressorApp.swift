@@ -1,27 +1,35 @@
 import SwiftUI
 
-class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
-    @Published var filesToOpen: [URL] = []
+@MainActor
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Single source of truth for the job list. Owned by the delegate so that
+    /// files opened via the Dock icon / Finder are added exactly once,
+    /// independent of how many views exist.
+    let processor = VideoProcessor()
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        filesToOpen = urls
+        processor.addFiles(urls)
+        NSApp.activate(ignoringOtherApps: true)
+        NSApp.windows
+            .first { $0.isVisible && $0.canBecomeMain }?
+            .makeKeyAndOrderFront(nil)
+    }
+
+    func applicationWillTerminate(_ notification: Notification) {
+        processor.stopAll()
     }
 }
 
 @main
 struct VideoCompressorApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @StateObject private var processor = VideoProcessor()
 
     var body: some Scene {
-        WindowGroup {
+        // `Window` (instead of `WindowGroup`) guarantees a single window:
+        // opening files via the Dock no longer spawns an additional window.
+        Window("Videoquetsche", id: "main") {
             ContentView()
-                .environmentObject(processor)
-                .onReceive(appDelegate.$filesToOpen) { urls in
-                    guard !urls.isEmpty else { return }
-                    processor.addFiles(urls)
-                    appDelegate.filesToOpen = []
-                }
+                .environmentObject(appDelegate.processor)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
