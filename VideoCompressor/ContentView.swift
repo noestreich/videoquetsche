@@ -31,6 +31,13 @@ struct ContentView: View {
 
             Divider()
 
+            // Web links (downloaded via yt-dlp)
+            URLInputView { text in
+                processor.addRemoteURLs(from: text) > 0
+            }
+
+            Divider()
+
             // Drop zone + job list
             ZStack {
                 if processor.jobs.isEmpty {
@@ -175,7 +182,7 @@ struct JobRowView: View {
                 .frame(width: 20)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text(job.url.lastPathComponent)
+                Text(job.displayName)
                     .font(.system(.body, design: .monospaced))
                     .lineLimit(1)
                     .truncationMode(.middle)
@@ -183,6 +190,19 @@ struct JobRowView: View {
                 if job.status == .running {
                     ProgressView(value: job.progress)
                         .frame(height: 4)
+                } else if job.status == .downloading {
+                    HStack(spacing: 8) {
+                        ProgressView(value: job.progress)
+                            .frame(height: 4)
+                        Text(job.progress > 0 ? "Lade \(Int(job.progress * 100)) %" : "Lade…")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .monospacedDigit()
+                    }
+                } else if job.status == .pendingDownload {
+                    Text("Wartet auf Download")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
                 } else if job.status == .failed, let msg = job.errorMessage {
                     Text(msg)
                         .font(.caption)
@@ -220,6 +240,12 @@ struct JobRowView: View {
     @ViewBuilder
     var statusIcon: some View {
         switch job.status {
+        case .pendingDownload:
+            Image(systemName: "icloud.and.arrow.down")
+                .foregroundColor(.secondary)
+        case .downloading:
+            Image(systemName: "arrow.down.circle")
+                .foregroundColor(.accentColor)
         case .waiting:
             Image(systemName: "clock")
                 .foregroundColor(.secondary)
@@ -238,7 +264,7 @@ struct JobRowView: View {
     }
 
     var rowBackground: some View {
-        Color.secondary.opacity(job.status == .running ? 0.08 : 0.0)
+        Color.secondary.opacity(job.status == .running || job.status == .downloading ? 0.08 : 0.0)
     }
 }
 
@@ -379,19 +405,71 @@ struct SettingsView: View {
             Divider()
 
             FFmpegStatusView()
+            YtDlpStatusView()
         }
     }
 }
 
+struct URLInputView: View {
+    /// Returns true if at least one link was accepted (clears the field).
+    let onSubmit: (String) -> Bool
+    @State private var text = ""
+    @State private var invalid = false
+
+    private var isEmpty: Bool {
+        text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "globe")
+                .foregroundColor(.secondary)
+            TextField("Video-Link oder m3u-Playlist einfügen…", text: $text)
+                .textFieldStyle(.roundedBorder)
+                .onSubmit(submit)
+                .onChange(of: text) { _ in invalid = false }
+                .overlay(
+                    RoundedRectangle(cornerRadius: 5)
+                        .stroke(Color.red, lineWidth: invalid ? 1 : 0)
+                )
+            Button("Laden", action: submit)
+                .disabled(isEmpty)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 10)
+    }
+
+    private func submit() {
+        guard !isEmpty else { return }
+        if onSubmit(text) {
+            text = ""
+        } else {
+            invalid = true
+        }
+    }
+}
+
+struct YtDlpStatusView: View {
+    var found: Bool { Tools.find("yt-dlp") != nil }
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Image(systemName: found ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
+                .font(.caption)
+                .foregroundColor(found ? .green : .orange)
+            Text(found ? "yt-dlp vorhanden" : "yt-dlp nicht gefunden (für Links): brew install yt-dlp")
+                .font(.caption.weight(.medium))
+                .foregroundColor(found ? .green : .orange)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}
+
 struct FFmpegStatusView: View {
-    private let candidates = [
-        "/opt/homebrew/bin/ffmpeg",
-        "/usr/local/bin/ffmpeg",
-        "/usr/bin/ffmpeg"
-    ]
+    private let candidates = Tools.searchDirs.map { "\($0)/ffmpeg" }
 
     var ffmpegFound: Bool {
-        candidates.contains { FileManager.default.fileExists(atPath: $0) }
+        Tools.find("ffmpeg") != nil
     }
 
     var body: some View {
